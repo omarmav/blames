@@ -30,7 +30,7 @@ pub extern "C" fn _start() -> ! {
         VideoType::Mono => 0xb0000 as *mut u8,
         VideoType::None => loop {}
     };
-    
+
     for (i, &byte) in hello_world.iter().enumerate() {
         unsafe {
             *vga_buffer.offset(i as isize * 2) = byte;
@@ -39,14 +39,19 @@ pub extern "C" fn _start() -> ! {
     }*/
     if let Some(framebuffer_response) = FRAMEBUFFER.get_response() {
         if let Some(framebuffer) = framebuffer_response.framebuffers().next() {
-            for i in 0..framebuffer.width() {
-                // Calculate the pixel offset using the framebuffer information we obtained above.
-                // We skip `i` scanlines (pitch is provided in bytes) and add `i * 4` to skip `i` pixels forward.
-                let pixel_offset = 10*framebuffer.pitch() + i*4;
+            for y in 0..framebuffer.height() {
+                for x in 0..framebuffer.width() {
+                    // Calculate the pixel offset using the framebuffer information we obtained above.
+                    // We skip `i` scanlines (pitch is provided in bytes) and add `i * 4` to skip `i` pixels forward.
+                    // x + y
 
-                // Write 0xFFFFFFFF to the provided pixel offset to fill it white.
-                unsafe {
-                    *(framebuffer.addr().add(pixel_offset as usize) as *mut u32) = 0xFFF88F00;
+                    let pixel_offset = x * 4 + y * framebuffer.pitch();
+
+                    // Write 0xFFFFFFFF to the provided pixel offset to fill it white.
+                    unsafe {
+                        *(framebuffer.addr().add(pixel_offset as usize) as *mut u32) =
+                            if x % 4 != 0 { 0xFFF88F00 } else { 0xFF00FF00 };
+                    }
                 }
             }
         }
