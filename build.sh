@@ -3,9 +3,9 @@
 # Build our kernel first of all
 echo "Building kernel..."
 if [ "$1" == "debug" ]; then
-    cargo build 
+    cd kernel && cargo build && cd ..
 else 
-    cargo build --release
+    cd kernel && cargo build --release && cd ..
 fi
 echo "Done!"
 # Time to put together an iso!
@@ -14,9 +14,9 @@ echo "Creating image..."
 rm -rf image_dir
 mkdir -p image_dir/boot
 if [ "$1" == "debug" ]; then
-    cp -v target/x86_64-blames/debug/blames image_dir/boot
+    cp -v kernel/target/x86_64-blames/debug/blames image_dir/boot
 else 
-    cp -v target/x86_64-blames/release/blames image_dir/boot
+    cp -v kernel/target/x86_64-blames/release/blames image_dir/boot
 fi
 mkdir -p image_dir/boot/limine
 

@@ -1,10 +1,24 @@
 #![no_std]
 #![no_main]
 
+extern crate alloc;
+
+mod graphics;
+mod debug;
+
+// All alloc related libraries
+use alloc::borrow::ToOwned;
+use alloc::vec;
+use alloc::vec::Vec;
+use linked_list_allocator::LockedHeap;
+// Core libraries
 use core::arch::asm;
 use core::panic::PanicInfo;
+// Limine
 use limine::request::FramebufferRequest;
 use limine::BaseRevision;
+// Debug
+use debug::qemu_log;
 
 #[used]
 #[link_section = ".requests"]
@@ -14,7 +28,11 @@ static BASEREVISION: BaseRevision = BaseRevision::new();
 #[link_section = ".requests"]
 static FRAMEBUFFER: FramebufferRequest = FramebufferRequest::new();
 
-// Function is called in panic
+// Set up our allocator
+#[global_allocator]
+static ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+// Function is called on panic
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
     loop {}
@@ -23,22 +41,25 @@ fn panic(_info: &PanicInfo) -> ! {
 // Entry point for our operating system
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    assert!(BASEREVISION.is_supported());
-    /*let hello_world = b"Hello world!";
-    let vga_buffer: *mut u8 = match get_video_address() {
-        VideoType::Colour => 0xb8000 as *mut u8,
-        VideoType::Mono => 0xb0000 as *mut u8,
-        VideoType::None => loop {}
-    };
+    qemu_log("_start reached, entering main");
+    main();
+    //halt_and_clear();
+}
 
-    for (i, &byte) in hello_world.iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize *2 + 1) = 0xb;
-        }
-    }*/
+
+// Setups ends here, and below this line every function, enum, struct and more should be.
+//
+// Any code which isnt "setup" shall be moved down here!
+
+fn main() -> ! {
+    //let mut double_framebuffer: Vec<u32>;
+    assert!(BASEREVISION.is_supported());
+    qemu_log("Base revision is supported, getting framebuffer next");
     if let Some(framebuffer_response) = FRAMEBUFFER.get_response() {
-        if let Some(framebuffer) = framebuffer_response.framebuffers().next() {
+        // Now that we've gotten the framebuffer we can actually create our double buffer
+        /*if let Some(framebuffer) = framebuffer_response.framebuffers().next() {
+            let buffer_size = framebuffer.width() * framebuffer.height() * 4;
+            double_framebuffer = vec![0x0; buffer_size as usize];
             for y in 0..framebuffer.height() {
                 for x in 0..framebuffer.width() {
                     // Calculate the pixel offset using the framebuffer information we obtained above.
@@ -47,23 +68,29 @@ pub extern "C" fn _start() -> ! {
 
                     let pixel_offset = x * 4 + y * framebuffer.pitch();
 
-                    // Write 0xFFFFFFFF to the provided pixel offset to fill it white.
-                    unsafe {
+                    /*unsafe {
                         *(framebuffer.addr().add(pixel_offset as usize) as *mut u32) =
                             if x % 4 != 0 { 0xFFF88F00 } else { 0xFF00FF00 };
+                    }*/
+                    if let Some(offset) = double_framebuffer.get_mut(pixel_offset as usize) {
+                        *offset = if x % 4 != 0 { 0xFFF88F00 } else { 0xFF00FF00 };
                     }
                 }
             }
-        }
+            unsafe {
+                write_into_framebuffer(framebuffer.addr(), double_framebuffer);
+            }
+        }*/
     }
 
     loop {}
-    //halt_and_clear();
 }
 
-// Setups ends here, and below this line every function, enum, struct and more should be.
-//
-// Any code which isnt "setup" shall be moved down here!
+/*unsafe fn write_into_framebuffer(framebuffer: *mut u8, double_buffer: Vec<u32>) {
+    for (offset, byte) in double_buffer.iter().enumerate() {
+        *(framebuffer.add(offset) as *mut u32) = byte.to_owned();
+    }
+}*/
 
 enum VideoType {
     None = 0x00,
