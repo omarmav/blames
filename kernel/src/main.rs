@@ -3,7 +3,7 @@
 
 extern crate alloc;
 
-mod graphics;
+//mod graphics;
 mod debug;
 
 // All alloc related libraries

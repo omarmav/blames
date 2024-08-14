@@ -1,12 +1,18 @@
 #!/bin/bash
 
+# Exit on error
+set -e
+
 # Build our kernel first of all
 echo "Building kernel..."
 if [ "$1" == "debug" ]; then
-    cd kernel && cargo build && cd ..
+    cd kernel && cargo build 
+    cd ..
 else 
-    cd kernel && cargo build --release && cd ..
+    cd kernel && cargo build --release 
+    cd ..
 fi
+pwd
 echo "Done!"
 # Time to put together an iso!
 # Remove root dir if there was one before

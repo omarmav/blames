@@ -1,4 +1,5 @@
 /kernel/target
+/kernel/Cargo.lock
 /image_dir
 /limine
 /blames.iso
